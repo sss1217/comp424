@@ -39,64 +39,59 @@ public class StudentPlayer extends TablutPlayer {
         // Is random the best you can do?
         Move myMove = boardState.getRandomMove();
 
-        myMove=greedy_decision(boardState);
-
-        if(boardState.getOpponentPieceCoordinates().size()<=3) {
-            System.out.println("----------------------------------------im here");
-            myMove = minimax_decision(boardState);
-        }
-
-        //----------------------my code------------------------
-
-
-        //----------------------end of my code------------------
+        //using minimax to get a move
+        myMove = minimax_decision(boardState);
 
         // Return your move to be processed by the server.
         return myMove;
     }
 
-    public Move greedy_decision(TablutBoardState boardState){
-        Move myMove = boardState.getRandomMove();
-        List<TablutMove> options = boardState.getAllLegalMoves();
-        int opponent = boardState.getOpponent();
-        int minNumberOfOpponentPieces = boardState.getNumberPlayerPieces(opponent);
-        boolean moveCaptures = false;
+    public Move minimax_decision(TablutBoardState bs){
+        List<TablutMove> options = bs.getAllLegalMoves();
 
+        // Set an initial move as some random one.
+        TablutMove bestMove = options.get(rand.nextInt(options.size()));
+        int maxValue=Integer.MIN_VALUE;
+        int newValue;
+
+        // Iterate over move options and evaluate them.
         for (TablutMove move : options) {
-            // To evaluate a move, clone the boardState so that we can do modifications on
-            // it.
-            TablutBoardState cloneBS = (TablutBoardState) boardState.clone();
+
+            // To evaluate a move, clone the boardState so that we can do modifications on it
+            TablutBoardState cloneBS = (TablutBoardState) bs.clone();
 
             // Process that move, as if we actually made it happen.
             cloneBS.processMove(move);
 
-            // Check how many opponent pieces there are now, maybe we captured some!
-            int newNumberOfOpponentPieces = cloneBS.getNumberPlayerPieces(opponent);
+            newValue = minimax(cloneBS,1,false);
 
-            // If this move caused some capturing to happen, then do it! Greedy!
-            if (newNumberOfOpponentPieces < minNumberOfOpponentPieces) {
-                myMove = move;
-                minNumberOfOpponentPieces = newNumberOfOpponentPieces;
-                moveCaptures = true;
+            if (newValue > maxValue) {
+                bestMove = move;
+                maxValue = newValue;
+
             }
         }
-        return myMove;
+        return bestMove;
     }
 
     public int minimax(TablutBoardState BS, int depth, boolean maximizingPlayer){
         int bestValue=0, value;
 
-        ArrayList<Move> options = new ArrayList<Move>();
-        options.add(greedy_decision(BS));
+        List<TablutMove> options = BS.getAllLegalMoves();
 
-
-        //if depth = 0 or node is a terminal node
-        if(depth==0||BS.getWinner()!= Board.NOBODY){
-            return heuristic_function(BS);
+        if(BS.getWinner()!=Board.NOBODY){
+            if(BS.getWinner()==player_id){ // if i win
+                return Integer.MAX_VALUE;
+            }else{  //if opponent wins
+                return Integer.MIN_VALUE;
+            }
+        }
+        else if(depth==0){//if depth = 0 evaluate moves
+            return evaluation(BS);
         }
 
         if(maximizingPlayer){
-            bestValue = -2000;
+            bestValue = Integer.MIN_VALUE;
             for(Move move:options){
                 TablutBoardState cloneBS = (TablutBoardState) BS.clone();
                 cloneBS.processMove((TablutMove) move);
@@ -105,7 +100,7 @@ public class StudentPlayer extends TablutPlayer {
             }
             return bestValue;
         }else{
-            bestValue = 2000;
+            bestValue = Integer.MAX_VALUE;
             for(Move move:options){
                 TablutBoardState cloneBS = (TablutBoardState) BS.clone();
                 cloneBS.processMove((TablutMove) move);
@@ -118,50 +113,20 @@ public class StudentPlayer extends TablutPlayer {
     }
 
     //heuristic of the end node
-    public int heuristic_function(TablutBoardState BS){
-        int heuristicValue=0;
+    public int evaluation(TablutBoardState BS){
+        int score=0;
 
+        //check capture
+        //myself : player_id
 
-        if(BS.getOpponentPieceCoordinates().size()<=7){
-            return 1000;
+        if(player_id == TablutBoardState.SWEDE){ //if i am SWEDE==1, the white, i check black pieces
+            score += (16 - BS.getNumberPlayerPieces(TablutBoardState.MUSCOVITE))*100;
+        }else if(player_id == TablutBoardState.MUSCOVITE){ //if i am Muscovite == 0, the black, i check white pieces
+            score += (9 - BS.getNumberPlayerPieces(TablutBoardState.SWEDE))*100;
         }
-        else if(BS.getWinner()!=player_id && BS.getWinner()!=Board.NOBODY){
-            //if opponent win
 
-            return -1000;
-        }
-
-
-
-
-        return heuristicValue;
+        return score;
     }
 
-    public Move minimax_decision(TablutBoardState bs){
-        List<TablutMove> options = bs.getAllLegalMoves();
 
-        // Set an initial move as some random one.
-        TablutMove bestMove = options.get(rand.nextInt(options.size()));
-        int maxValue=-5000;
-        int newValue=0;
-
-        // Iterate over move options and evaluate them.
-        for (TablutMove move : options) {
-
-            // To evaluate a move, clone the boardState so that we can do modifications on
-            // it.
-            TablutBoardState cloneBS = (TablutBoardState) bs.clone();
-
-            // Process that move, as if we actually made it happen.
-            cloneBS.processMove(move);
-            newValue = minimax(cloneBS,1,false);
-
-            if (newValue > maxValue) {
-                bestMove = move;
-                maxValue = newValue;
-
-            }
-        }
-        return bestMove;
-    }
 }
