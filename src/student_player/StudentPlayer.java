@@ -46,7 +46,7 @@ public class StudentPlayer extends TablutPlayer {
         return myMove;
     }
 
-    public Move minimax_decision(TablutBoardState bs){
+   /* public Move minimax_decision(TablutBoardState bs){
         List<TablutMove> options = bs.getAllLegalMoves();
 
         // Set an initial move as some random one.
@@ -111,6 +111,74 @@ public class StudentPlayer extends TablutPlayer {
 
         return bestValue;
     }
+*/
+     public Move minimax_decision(TablutBoardState bs){
+         List<TablutMove> options = bs.getAllLegalMoves();
+
+         // Set an initial move as some random one.
+         TablutMove bestMove = options.get(rand.nextInt(options.size()));
+         int maxValue=Integer.MIN_VALUE;
+         int newValue;
+
+         // Iterate over move options and evaluate them.
+         for (TablutMove move : options) {
+
+             // To evaluate a move, clone the boardState so that we can do modifications on it
+             TablutBoardState cloneBS = (TablutBoardState) bs.clone();
+
+             // Process that move, as if we actually made it happen.
+             cloneBS.processMove(move);
+
+             newValue = minimax(cloneBS,2,false, Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+             if (newValue > maxValue) {
+                 bestMove = move;
+                 maxValue = newValue;
+
+             }
+         }
+         return bestMove;
+     }
+
+     public int minimax(TablutBoardState BS, int depth, boolean maximizingPlayer, int alpha, int beta){
+         int bestValue=0, value;
+
+         List<TablutMove> options = BS.getAllLegalMoves();
+
+         if(BS.getWinner()!=Board.NOBODY){
+             if(BS.getWinner()==player_id){ // if i win
+                 return Integer.MAX_VALUE;
+             }else{  //if opponent wins
+                 return Integer.MIN_VALUE;
+             }
+         }
+         else if(depth==0){//if depth = 0 evaluate moves
+             return evaluation(BS);
+         }
+
+         if(maximizingPlayer){
+             bestValue = Integer.MIN_VALUE;
+             for(Move move:options){
+                 TablutBoardState cloneBS = (TablutBoardState) BS.clone();
+                 cloneBS.processMove((TablutMove) move);
+                 bestValue = Math.max(bestValue,minimax(cloneBS, depth-1, false, alpha, beta));
+                 alpha = Math.max(alpha,bestValue);
+                 if(beta <= alpha) break;
+             }
+             return bestValue;
+         }else{
+             bestValue = Integer.MAX_VALUE;
+             for(Move move:options){
+                 TablutBoardState cloneBS = (TablutBoardState) BS.clone();
+                 cloneBS.processMove((TablutMove) move);
+                 bestValue = Math.min(bestValue,minimax(cloneBS, depth-1, true, alpha,beta));
+                 beta = Math.min(beta,bestValue);
+                 if(beta<=alpha)break;
+             }
+         }
+
+         return bestValue;
+     }
 
     //heuristic of the end node
     public int evaluation(TablutBoardState BS){
